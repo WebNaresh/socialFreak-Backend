@@ -7,6 +7,7 @@ const {
   getPosts,
   RemoveUser,
   sendMessage,
+  AddPeerToUser,
 } = require("./socketController/postSocket");
 // Handling Uncaught Exception
 // process.on("uncaughtException", (err) => {
@@ -33,10 +34,7 @@ const io = socketIo(server, {
 });
 
 io.on("connect", (socket) => {
-  // socket.emit("hello", "ok");
-  // socket.on("hello", (arg) => {
-  // });
-  // // global.chatSocket = socket;
+  socket.emit("me", socket.id);
   socket.on("add-user", (userId) => {
     AddUser(socket, userId, io).then((map) => {
       io.emit("users", JSON.stringify(Array.from(map)));
@@ -50,8 +48,25 @@ io.on("connect", (socket) => {
   socket.on("get-post", (skip, userId) => {
     getPosts(skip, userId, socket, io);
   });
+  socket.on("peer", (peerId, userId) => {
+    console.log(`🚀 ~ peerId, userId:`, peerId, userId);
+    AddPeerToUser(peerId, userId).then((map) => {
+      io.emit("users", JSON.stringify(Array.from(map)));
+    });
+  });
   socket.on("send-Message", (data) => {
     sendMessage(data, io);
+  });
+  socket.on("callUser", (data) => {
+    io.to(data.userToCall).emit("callUser", {
+      signal: data.signalData,
+      from: data.from,
+      name: data.name,
+    });
+  });
+
+  socket.on("answerCall", (data) => {
+    io.to(data.to).emit("callAccepted", data.signal);
   });
 });
 
@@ -64,5 +79,4 @@ io.on("connect", (socket) => {
 //   });
 // });
 
-// npm i express cookie-parser body-parser mongoose dotenv validator
 exports.io = io;

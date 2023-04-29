@@ -12,7 +12,18 @@ setInterval(() => {
 }, 5000);
 
 exports.AddUser = async (socket, userId, io) => {
-  onlineUsers.set(userId, socket.id);
+  onlineUsers.set(userId, [socket.id]);
+  io.to(onlineUsers.get(userId)[0]).emit(
+    "get-peerId",
+    onlineUsers.get(userId)[0]
+  );
+  console.log(`🚀 ~ onlineUsers.get(userId)[0]:`, onlineUsers.get(userId)[0]);
+
+  return global.onlineUsers;
+};
+exports.AddPeerToUser = async (peerId, userId) => {
+  onlineUsers.get(userId).push(peerId);
+
   return global.onlineUsers;
 };
 
@@ -31,7 +42,7 @@ exports.getPosts = async (skip, userId, socket, io) => {
     .sort({ createdAt: -1 })
     .skip(skip * 2)
     .limit(2);
-  io.to(onlineUsers.get(userId)).emit("take-posts", posts);
+  io.to(onlineUsers.get(userId)[0]).emit("take-posts", posts);
 };
 exports.sendMessage = async (data, io) => {
   const { message, reciever } = data;
@@ -46,9 +57,7 @@ exports.sendMessage = async (data, io) => {
     arrayPush.message = [...arrayPush.message, ...message];
     arrayPush.save();
     arrayPush.populate(["sender", "reciever"]).then((doc) => {
-      console.log(`🚀 ~ doc:`, doc);
       io.to(onlineUsers.get(reciever)).emit("get-msg", data);
-      // io.to(onlineUsers.get(sender)).emit("get-msg", doc);
     });
   } else {
     let newMessage = await Message.create({
@@ -58,12 +67,8 @@ exports.sendMessage = async (data, io) => {
       reciever,
     }).then((document) =>
       document.populate(["sender", "reciever"]).then((doc) => {
-        console.log(`🚀 ~ doc:`, doc);
         io.to(onlineUsers.get(reciever)).emit("get-msg", data);
-        // io.to(onlineUsers.get(sender)).emit("get-msg", doc);
       })
     );
-
-    // io.to(onlineUsers.get(reciever)).emit("get-msg", newMessage);
   }
 };
