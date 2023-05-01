@@ -8,6 +8,10 @@ const {
   RemoveUser,
   sendMessage,
   AddPeerToUser,
+  callUser,
+  callAccept,
+  endCall,
+  setCallerId,
 } = require("./socketController/postSocket");
 // Handling Uncaught Exception
 // process.on("uncaughtException", (err) => {
@@ -58,15 +62,15 @@ io.on("connect", (socket) => {
     sendMessage(data, io);
   });
   socket.on("callUser", (data) => {
-    io.to(data.userToCall).emit("callUser", {
-      signal: data.signalData,
-      from: data.from,
-      name: data.name,
-    });
+    console.log(data);
+    callUser(io, data);
+  });
+  socket.on("callEnded", (id) => {
+    endCall(io, id);
   });
 
-  socket.on("answerCall", (data) => {
-    io.to(data.to).emit("callAccepted", data.signal);
+  socket.on("callerId", (data) => {
+    setCallerId(io, data);
   });
 });
 

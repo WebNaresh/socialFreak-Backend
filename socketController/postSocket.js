@@ -17,7 +17,6 @@ exports.AddUser = async (socket, userId, io) => {
     "get-peerId",
     onlineUsers.get(userId)[0]
   );
-  console.log(`🚀 ~ onlineUsers.get(userId)[0]:`, onlineUsers.get(userId)[0]);
 
   return global.onlineUsers;
 };
@@ -71,4 +70,13 @@ exports.sendMessage = async (data, io) => {
       })
     );
   }
+};
+
+exports.endCall = async (io, id) => {
+  console.log(`🚀 ~ id:`, id);
+  io.to(onlineUsers.get(id)[0]).emit("redirect", "call is ended");
+};
+exports.setCallerId = async (io, data) => {
+  console.log(`🚀 ~ io, data:`, data);
+  io.to(onlineUsers.get(data.to)[0]).emit("setCallerId", data.from);
 };
