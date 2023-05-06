@@ -21,14 +21,20 @@ exports.AddUser = async (socket, userId, io) => {
   return global.onlineUsers;
 };
 exports.AddPeerToUser = async (peerId, userId) => {
-  onlineUsers.get(userId).push(peerId);
+  if (onlineUsers.get(userId)[1] === undefined) {
+    onlineUsers.get(userId).push(peerId);
+  } else {
+    onlineUsers.get(userId)[1] = peerId;
+  }
 
   return global.onlineUsers;
 };
 
 exports.RemoveUser = async (id) => {
   onlineUsers.forEach((element, key) => {
-    if (element === id) {
+    console.log(`🚀 ~ element, key:`, element, key);
+    console.log(`🚀 ~ element.includes(id):`, element.includes(id));
+    if (element.includes(id)) {
       onlineUsers.delete(key);
     }
   });

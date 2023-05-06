@@ -45,6 +45,7 @@ io.on("connect", (socket) => {
     });
   });
   socket.on("disconnect", function () {
+    console.log("socket disconnected");
     RemoveUser(socket.id).then((map) => {
       io.emit("users", JSON.stringify(Array.from(map)));
     });
