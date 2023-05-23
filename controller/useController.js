@@ -5,6 +5,9 @@ const User = require("../models/userSchema");
 const sendToken = require("../utils/sendToken");
 const jwt = require("jsonwebtoken");
 const { default: mongoose } = require("mongoose");
+const { Map } = require("../socketController/postSocket");
+const io = require("../server");
+// const io = require("../server");
 
 exports.test = catchAssyncError(async (req, res, next) => {
   res.status(200).json({ message: "Route is  working " });
@@ -13,27 +16,66 @@ exports.test = catchAssyncError(async (req, res, next) => {
 
 exports.register = catchAssyncError(async (req, res, next) => {
   const { userName, userEmail, profilePicture } = req.body;
-  const existed = await User.find({ userEmail }).populate("friends");
+  const existed = await User.findOne({ userEmail }).populate([
+    "friends",
+    "followers",
+    "following",
+  ]);
 
-  if (existed.length === 1) {
-    console.log(`🚀 ~ existed.length:`, existed.length);
-    existed[0].password = null;
-    const array = [...existed[0].friends, existed[0]._id];
-    let userSuggstion = await User.find({ _id: { $nin: array } });
-    existed[0].userSuggestion = userSuggstion;
-    existed[0].save();
-    return sendToken(existed[0], res, 201);
+  if (existed) {
+    const array = [
+      ...existed.friends,
+      existed._id,
+      ...existed.following,
+      ...existed.followers,
+    ];
+    let userSuggstion = await User.find({ _id: { $nin: array } }).limit(10);
+    existed.userSuggestion = userSuggstion;
+
+    existed.save().then((doc) => {
+      return sendToken(doc, res, 201);
+    });
   } else {
     const user = await User.create({
       userName,
       userEmail,
       profilePicture,
     });
-    const array = [...existed[0].friends, existed[0]._id];
+    const array = [...user.friends, user._id];
     let userSuggstion = await User.find({ _id: { $nin: array } });
+    console.log(`🚀 ~ userSuggstion:`, userSuggstion);
     user.userSuggestion = userSuggstion;
-    user.save();
-    sendToken(user, res, 200);
+
+    user.save().then((doc) => {
+      return sendToken(doc, res, 201);
+    });
+  }
+});
+exports.getUserWithId = catchAssyncError(async (req, res, next) => {
+  const { id } = req.body;
+  const existed = await User.findOne({ _id: id }).populate([
+    "friends",
+    "followers",
+    "following",
+  ]);
+
+  if (existed) {
+    const array = [
+      ...existed.friends,
+      existed._id,
+      ...existed.following,
+      ...existed.followers,
+    ];
+    let userSuggstion = await User.find({ _id: { $nin: array } }).limit(10);
+    console.log(`🚀 ~ userSuggstion:`, userSuggstion);
+    existed.userSuggestion = userSuggstion;
+
+    // existed.save().then(
+    // (existed) => {
+    console.log(`🚀 ~ doc:`, existed);
+    return sendToken(existed, res, 201);
+    // }
+    // );
   }
 });
 // getAllUser a User
@@ -142,29 +184,94 @@ exports.getFreind = catchAssyncError(async (req, res, next) => {
     users,
   });
 });
-// ADD Freiend of User
+
+// send Request
+
+// exports.addFreind = catchAssyncError(async (req, res, next) => {
+//   const id = req.params.id;
+//   const { addableId } = req.body;
+//   this.sendRequest(addableId, id);
+//   let user = await User.findByIdAndUpdate(
+//     { _id: id },
+//     {
+//       $addToSet: { following: addableId },
+//       $pull: {
+//         userSuggestion: addableId,
+//       },
+//     },
+//     {
+//       returnOriginal: false,
+//     }
+//   );
+
+//   if (addableId !== undefined) {
+//     user.userSuggestion = user.userSuggestion.filter(
+//       (ele) => ele === addableId
+//     );
+//     let otherUser = await User.findOneAndUpdate(
+//       { _id: addableId },
+//       { $addToSet: { followers: user._id } },
+//       {
+//         returnOriginal: false,
+//       }
+//     );
+//     // await user.save();
+//   }
+//   await user.populate("friends");
+
+//   res.status(200).json({
+//     success: true,
+//     user,
+//   });
+// });
 
 exports.addFreind = catchAssyncError(async (req, res, next) => {
   const id = req.params.id;
   const { addableId } = req.body;
-  let user = await User.findOne({ _id: id });
-  if (user.friends.includes(addableId) === false) {
-    if (addableId !== undefined) {
-      user.friends.push(addableId);
-      user.userSuggestion = user.userSuggestion.filter(
-        (ele) => ele === addableId
-      );
-
-      user.save();
-    }
-  }
-  await user.populate("friends");
-
+  // let user = await this.sendRequest(addableId, id);
+  let newMap = Map(addableId);
+  console.log(`🚀 ~ newMap:`, newMap);
+  io.io.to(newMap).emit("request", id);
+  console.log(io.io.to);
   res.status(200).json({
     success: true,
-    user,
+    io,
   });
 });
+
+// exports.sendRequest = async (addableId, id) => {
+//   console.log("i am running");
+//   let newMap = Map(addableId).then((id) => {
+//     console.log(`🚀 ~ id:`, id);
+//     io.io.to(id).emit("request", id);
+//   });
+//   // let user = await User.findByIdAndUpdate(
+//   //   { _id: id },
+//   //   {
+//   //     $addToSet: { following: addableId },
+//   //     $pull: {
+//   //       userSuggestion: addableId,
+//   //     },
+//   //   },
+//   //   {
+//   //     returnOriginal: false,
+//   //   }
+//   // );
+//   // if (addableId !== undefined) {
+//   //   user.userSuggestion = user.userSuggestion.filter(
+//   //     (ele) => ele === addableId
+//   //   );
+//   //   let otherUser = await User.findOneAndUpdate(
+//   //     { _id: addableId },
+//   //     { $addToSet: { followers: user._id } },
+//   //     {
+//   //       returnOriginal: false,
+//   //     }
+//   //   );
+//   // }
+//   // return user.populate("friends");
+// };
+
 // getFreiend of User
 
 exports.deleteFreind = catchAssyncError(async (req, res, next) => {
@@ -183,6 +290,43 @@ exports.deleteFreind = catchAssyncError(async (req, res, next) => {
   });
 });
 
+// accept Request
+
+exports.acceptRequest = catchAssyncError(async (req, res, next) => {
+  const id = req.params.id;
+  const { addableId } = req.body;
+
+  let user = await User.findOneAndUpdate(
+    { _id: id },
+    {
+      $pull: {
+        following: addableId,
+        userSuggestion: addableId,
+      },
+      $addToSet: {
+        followers: addableId,
+      },
+    },
+    {
+      returnOriginal: false,
+    }
+  );
+  let otherUser = await User.findOneAndUpdate(
+    { _id: addableId },
+    {
+      $pull: { following: user._id, userSuggestion: user._id },
+      $addToSet: { followers: user._id },
+    },
+    {
+      returnOriginal: false,
+    }
+  );
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});
 // delete user
 // get a user
 // follow user

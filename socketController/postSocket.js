@@ -1,16 +1,12 @@
 // sendMessage a User
-const ErrorHandler = require("../utils/errorHandler");
 const catchAssyncError = require("../middleware/catchAssyncError");
 const Message = require("../models/messageSchema");
-const jwtMaker = require("../utils/jwtMaker");
-const { getPost } = require("./postSocket");
 const PostSchema = require("../models/PostSchema");
-let value = require("../server");
+const User = require("../models/userSchema");
 global.onlineUsers = new Map();
 setInterval(() => {
   console.log(global.onlineUsers);
 }, 5000);
-
 exports.AddUser = async (socket, userId, io) => {
   onlineUsers.set(userId, [socket.id]);
   io.to(onlineUsers.get(userId)[0]).emit(
@@ -32,8 +28,6 @@ exports.AddPeerToUser = async (peerId, userId) => {
 
 exports.RemoveUser = async (id) => {
   onlineUsers.forEach((element, key) => {
-    console.log(`🚀 ~ element, key:`, element, key);
-    console.log(`🚀 ~ element.includes(id):`, element.includes(id));
     if (element.includes(id)) {
       onlineUsers.delete(key);
     }
@@ -57,7 +51,7 @@ exports.sendMessage = async (data, io) => {
     .sort({ createdAt: -1 })
     .limit(1);
 
-  if (messages[0].sender._id.toString() === sender) {
+  if (messages[0]?.sender._id.toString() === sender) {
     let arrayPush = await Message.findOne({ _id: messages[0]._id });
     arrayPush.message = [...arrayPush.message, ...message];
     arrayPush.save();
@@ -79,10 +73,71 @@ exports.sendMessage = async (data, io) => {
 };
 
 exports.endCall = async (io, id) => {
-  console.log(`🚀 ~ id:`, id);
   io.to(onlineUsers.get(id)[0]).emit("redirect", "call is ended");
 };
 exports.setCallerId = async (io, data) => {
-  console.log(`🚀 ~ io, data:`, data);
   io.to(onlineUsers.get(data.to)[0]).emit("setCallerId", data.from);
+};
+exports.Map = async (id) => {
+  let newId = global.onlineUsers.get(id)[0];
+  return newId;
+};
+exports.sendRequest = async (addableId, id, io) => {
+  console.log("i am running");
+
+  let user = await User.findByIdAndUpdate(
+    { _id: id },
+    {
+      $addToSet: { following: addableId },
+      $pull: {
+        userSuggestion: addableId,
+      },
+    },
+    {
+      returnOriginal: false,
+    }
+  );
+  if (addableId !== undefined) {
+    user.userSuggestion = user.userSuggestion.filter(
+      (ele) => ele === addableId
+    );
+    let otherUser = await User.findOneAndUpdate(
+      { _id: addableId },
+      { $addToSet: { followers: user._id } },
+      {
+        returnOriginal: false,
+      }
+    );
+  }
+  io.to(onlineUsers.get(addableId)[0]).emit("request", user);
+};
+exports.acceptRequest = async (addableId, id, io) => {
+
+
+  let user = await User.findOneAndUpdate(
+    { _id: id },
+    {
+      $pull: {
+        following: addableId,
+        userSuggestion: addableId,
+      },
+      $addToSet: {
+        followers: addableId,
+      },
+    },
+    {
+      returnOriginal: false,
+    }
+  );
+  let otherUser = await User.findOneAndUpdate(
+    { _id: addableId },
+    {
+      $pull: { following: user._id, userSuggestion: user._id },
+      $addToSet: { followers: user._id },
+    },
+    {
+      returnOriginal: false,
+    }
+  );
+  io.to(onlineUsers.get(addableId)[0]).emit("followBack", user);
 };

@@ -13,14 +13,17 @@ exports.CreatePost = catchAssyncError(async (req, res, next) => {
       title: title,
       hashTag: hashTags,
       taggedPeople: taggedPeople,
-    }).then((v) =>
-      v.populate("userId").then((e) =>
-        res.status(200).json({
-          success: true,
-          post: e,
-        })
-      )
-    );
+    }).then((v) => {
+      v.views.addToSet(req.params.id);
+      v.save().then((v) => {
+        v.populate("userId").then((e) =>
+          res.status(200).json({
+            success: true,
+            post: e,
+          })
+        );
+      });
+    });
   } else {
     res.status(201).json({
       success: false,
@@ -59,7 +62,7 @@ exports.LikePost = catchAssyncError(async (req, res, next) => {
   if (response === "like") {
     if (post.likes.includes(req.params.id)) {
     } else {
-      post.likes.push(req.params.id);
+      post.likes.addToSet(req.params.id);
       post.save();
     }
   } else {
@@ -88,7 +91,7 @@ exports.ViewPost = catchAssyncError(async (req, res, next) => {
   // console.log(`🚀 ~ post:`, post.views.includes(req.params.id));
   if (post.likes.includes(req.params.id)) {
   } else {
-    post.views.push(req.params.id);
+    post.views.addToSet(req.params.id);
     post.save();
   }
 

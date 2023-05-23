@@ -11,7 +11,8 @@ const {
   callUser,
   callAccept,
   endCall,
-  setCallerId,
+  setCallerId,acceptRequest,
+  sendRequest,
 } = require("./socketController/postSocket");
 // Handling Uncaught Exception
 // process.on("uncaughtException", (err) => {
@@ -36,7 +37,6 @@ const io = socketIo(server, {
     credentials: true,
   },
 });
-
 io.on("connect", (socket) => {
   socket.emit("me", socket.id);
   socket.on("add-user", (userId) => {
@@ -73,8 +73,15 @@ io.on("connect", (socket) => {
   socket.on("callerId", (data) => {
     setCallerId(io, data);
   });
+  socket.on("userwantofriend", (data) => {
+    sendRequest(data.addableId, data.userId, io);
+  });
+  socket.on("userwantofollowback", (data) => {
+    console.log(data);
+    acceptRequest(data.addableId, data.userId, io);
+  });
 });
-
+module.exports.io = io;
 // Unhandled Promise Rejection
 // process.on("unhandledRejection", (err) => {
 //   console.log(`Error: ${err.message}`);
@@ -83,5 +90,3 @@ io.on("connect", (socket) => {
 //     process.exit(1);
 //   });
 // });
-
-exports.io = io;

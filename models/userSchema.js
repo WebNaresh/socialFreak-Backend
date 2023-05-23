@@ -30,14 +30,8 @@ const User = new mongoose.Schema(
       type: String,
       default: "",
     },
-    followers: {
-      type: Array,
-      default: [],
-    },
-    following: {
-      type: Array,
-      default: [],
-    },
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     location: {
       type: String,
       max: 50,
@@ -92,7 +86,8 @@ User.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, 10);
 });
 User.methods.getJWTToken = function () {
-  return jwt.sign({ user: this }, process.env.jWT_SECRETE, {
+  console.log(this._id);
+  return jwt.sign({ user: this._id }, process.env.jWT_SECRETE, {
     expiresIn: process.env.JWT_EXPIRE,
   });
 };
