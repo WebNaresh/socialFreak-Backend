@@ -83,8 +83,6 @@ exports.Map = async (id) => {
   return newId;
 };
 exports.sendRequest = async (addableId, id, io) => {
-  console.log("i am running");
-
   let user = await User.findByIdAndUpdate(
     { _id: id },
     {
@@ -112,17 +110,15 @@ exports.sendRequest = async (addableId, id, io) => {
   io.to(onlineUsers.get(addableId)[0]).emit("request", user);
 };
 exports.acceptRequest = async (addableId, id, io) => {
-
-
   let user = await User.findOneAndUpdate(
     { _id: id },
     {
       $pull: {
-        following: addableId,
         userSuggestion: addableId,
       },
       $addToSet: {
         followers: addableId,
+        following: addableId,
       },
     },
     {
@@ -132,7 +128,7 @@ exports.acceptRequest = async (addableId, id, io) => {
   let otherUser = await User.findOneAndUpdate(
     { _id: addableId },
     {
-      $pull: { following: user._id, userSuggestion: user._id },
+      $pull: { userSuggestion: user._id },
       $addToSet: { followers: user._id },
     },
     {

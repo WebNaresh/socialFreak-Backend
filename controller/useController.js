@@ -58,6 +58,7 @@ exports.getUserWithId = catchAssyncError(async (req, res, next) => {
     "followers",
     "following",
   ]);
+  console.log(`🚀 ~ existed:`, existed);
 
   if (existed) {
     const array = [
@@ -76,6 +77,10 @@ exports.getUserWithId = catchAssyncError(async (req, res, next) => {
     return sendToken(existed, res, 201);
     // }
     // );
+  } else {
+    res.status(400).json({
+      success: false,
+    });
   }
 });
 // getAllUser a User
