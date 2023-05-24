@@ -21,6 +21,7 @@ exports.register = catchAssyncError(async (req, res, next) => {
     "followers",
     "following",
   ]);
+  console.log(`🚀 ~ existed:`, existed);
 
   if (existed) {
     const array = [
@@ -53,7 +54,6 @@ exports.register = catchAssyncError(async (req, res, next) => {
 });
 exports.getUserWithId = catchAssyncError(async (req, res, next) => {
   const { id } = req.body;
-  console.log(`🚀 ~ id:`, id);
   const existed = await User.findOne({ _id: id }).populate([
     "friends",
     "followers",
