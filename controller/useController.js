@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const { default: mongoose } = require("mongoose");
 const { Map } = require("../socketController/postSocket");
 const io = require("../server");
+const { getIo, broadcastMessage } = require("../socket");
 // const io = require("../server");
 
 exports.test = catchAssyncError(async (req, res, next) => {
@@ -21,7 +22,6 @@ exports.register = catchAssyncError(async (req, res, next) => {
     "followers",
     "following",
   ]);
-  console.log(`🚀 ~ existed:`, existed);
 
   if (existed) {
     const array = [
@@ -44,10 +44,11 @@ exports.register = catchAssyncError(async (req, res, next) => {
     });
     const array = [...user.friends, user._id];
     let userSuggstion = await User.find({ _id: { $nin: array } });
-    console.log(`🚀 ~ userSuggstion:`, userSuggstion);
     user.userSuggestion = userSuggstion;
 
     user.save().then((doc) => {
+      let io = getIo();
+      io.emit("newUser", existed);
       return sendToken(doc, res, 201);
     });
   }
@@ -59,7 +60,6 @@ exports.getUserWithId = catchAssyncError(async (req, res, next) => {
     "followers",
     "following",
   ]);
-  console.log(`🚀 ~ existed:`, existed);
 
   if (existed) {
     const array = [
@@ -69,12 +69,10 @@ exports.getUserWithId = catchAssyncError(async (req, res, next) => {
       ...existed.followers,
     ];
     let userSuggstion = await User.find({ _id: { $nin: array } }).limit(10);
-    console.log(`🚀 ~ userSuggstion:`, userSuggstion);
     existed.userSuggestion = userSuggstion;
 
     // existed.save().then(
     // (existed) => {
-    console.log(`🚀 ~ doc:`, existed);
     return sendToken(existed, res, 201);
     // }
     // );
@@ -236,9 +234,7 @@ exports.addFreind = catchAssyncError(async (req, res, next) => {
   const { addableId } = req.body;
   // let user = await this.sendRequest(addableId, id);
   let newMap = Map(addableId);
-  console.log(`🚀 ~ newMap:`, newMap);
   io.io.to(newMap).emit("request", id);
-  console.log(io.io.to);
   res.status(200).json({
     success: true,
     io,
@@ -246,9 +242,7 @@ exports.addFreind = catchAssyncError(async (req, res, next) => {
 });
 
 // exports.sendRequest = async (addableId, id) => {
-//   console.log("i am running");
 //   let newMap = Map(addableId).then((id) => {
-//     console.log(`🚀 ~ id:`, id);
 //     io.io.to(id).emit("request", id);
 //   });
 //   // let user = await User.findByIdAndUpdate(

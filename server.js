@@ -11,9 +11,11 @@ const {
   callUser,
   callAccept,
   endCall,
-  setCallerId,acceptRequest,
+  setCallerId,
+  acceptRequest,
   sendRequest,
 } = require("./socketController/postSocket");
+const { initSocket, getIo } = require("./socket");
 // Handling Uncaught Exception
 // process.on("uncaughtException", (err) => {
 //   console.log(`Error: ${err.message}`);
@@ -31,12 +33,9 @@ const server = app.listen(process.env.PORT, () => {
 
 const users = [{}];
 // socket io connection
-const io = socketIo(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    credentials: true,
-  },
-});
+initSocket(server);
+const io = getIo();
+
 io.on("connect", (socket) => {
   socket.emit("me", socket.id);
   socket.on("add-user", (userId) => {

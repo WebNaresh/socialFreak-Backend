@@ -3,11 +3,13 @@ const catchAssyncError = require("../middleware/catchAssyncError");
 const Message = require("../models/messageSchema");
 const PostSchema = require("../models/PostSchema");
 const User = require("../models/userSchema");
+const { getIo } = require("../socket");
 global.onlineUsers = new Map();
 setInterval(() => {
   console.log(global.onlineUsers);
 }, 5000);
-exports.AddUser = async (socket, userId, io) => {
+exports.AddUser = async (socket, userId) => {
+  let io = getIo();
   onlineUsers.set(userId, [socket.id]);
   io.to(onlineUsers.get(userId)[0]).emit(
     "get-peerId",

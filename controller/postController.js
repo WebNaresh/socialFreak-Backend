@@ -4,7 +4,6 @@ const catchAssyncError = require("../middleware/catchAssyncError");
 const PostSchema = require("../models/PostSchema");
 
 exports.CreatePost = catchAssyncError(async (req, res, next) => {
-  // console.log(`🚀 ~ post:`);
   const { imagesArray, title, taggedPeople, hashTags } = req.body;
   if (imagesArray || title || taggedPeople || hashTags || req.params.id) {
     const post = await PostSchema.create({
@@ -41,7 +40,6 @@ exports.Post = catchAssyncError(async (req, res, next) => {
     .limit(2);
   if (req.params.id) {
     num = Number(req.query.page) + 1;
-    console.log(`🚀 ~ num:`, req.query.page);
     res.status(200).json({
       postsCount: posts.length,
       success: true,
@@ -85,10 +83,8 @@ exports.LikePost = catchAssyncError(async (req, res, next) => {
 });
 
 exports.ViewPost = catchAssyncError(async (req, res, next) => {
-  // console.log(req.body);
   const { postId } = req.body;
   let post = await PostSchema.findByIdAndUpdate(postId);
-  // console.log(`🚀 ~ post:`, post.views.includes(req.params.id));
   if (post.likes.includes(req.params.id)) {
   } else {
     post.views.addToSet(req.params.id);
@@ -101,7 +97,6 @@ exports.ViewPost = catchAssyncError(async (req, res, next) => {
   });
 });
 exports.AddComment = catchAssyncError(async (req, res, next) => {
-  // console.log(req.body);
   const { msg, userId } = req.body;
   let post = await PostSchema.findByIdAndUpdate(req.params.id);
   post.comments.push({
@@ -110,7 +105,6 @@ exports.AddComment = catchAssyncError(async (req, res, next) => {
   });
   post.save();
   await post.populate(["comments.userId"]);
-  // console.log(`🚀 ~ post:`, post);
 
   res.status(200).json({
     success: true,

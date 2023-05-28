@@ -4,17 +4,20 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Moment = new mongoose.Schema(
   {
-    coverPhoto: {
-      type: String,
-      required: [true, "Please Enter Your CoverPhoto"],
-    },
-    from: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "Please Enter Your from"],
       ref: "User",
     },
-    momentId: {
-      default: [],
+    Message: {
+      type: String,
+      required: true,
+    },
+    Image: {
+      type: String,
+    },
+    Video: {
+      type: String,
     },
   },
   { timestamps: true }
