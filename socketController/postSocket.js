@@ -11,10 +11,11 @@ setInterval(() => {
 exports.AddUser = async (socket, userId) => {
   let io = getIo();
   onlineUsers.set(userId, [socket.id]);
-  io.to(onlineUsers.get(userId)[0]).emit(
-    "get-peerId",
-    onlineUsers.get(userId)[0]
-  );
+  // io.to(onlineUsers.get(userId)[0]).emit(
+  //   "get-peerId",
+  //   onlineUsers.get(userId)[0]
+  // );
+  emitEventToUser(io, "get-peerId", userId, "sendId");
 
   return global.onlineUsers;
 };
@@ -37,14 +38,14 @@ exports.RemoveUser = async (id) => {
   return global.onlineUsers;
 };
 
-exports.getPosts = async (skip, userId, socket, io) => {
-  let posts = await PostSchema.find()
-    .populate(["userId", "comments.userId"])
-    .sort({ createdAt: -1 })
-    .skip(skip * 2)
-    .limit(2);
-  io.to(onlineUsers.get(userId)[0]).emit("take-posts", posts);
-};
+// exports.getPosts = async (skip, userId, socket, io) => {
+//   let posts = await PostSchema.find()
+//     .populate(["userId", "comments.userId"])
+//     .sort({ createdAt: -1 })
+//     .skip(skip * 2)
+//     .limit(2);
+//   io.to(onlineUsers.get(userId)[0]).emit("take-posts", posts);
+// };
 exports.sendMessage = async (data, io) => {
   const { message, reciever } = data;
   let sender = data.sender._id;
@@ -58,7 +59,8 @@ exports.sendMessage = async (data, io) => {
     arrayPush.message = [...arrayPush.message, ...message];
     arrayPush.save();
     arrayPush.populate(["sender", "reciever"]).then((doc) => {
-      io.to(onlineUsers.get(reciever)).emit("get-msg", data);
+      emitEventToUser(io, "get-msg", reciever, data);
+      // io.to(onlineUsers.get(reciever)).emit("get-msg", data);
     });
   } else {
     let newMessage = await Message.create({
@@ -68,22 +70,13 @@ exports.sendMessage = async (data, io) => {
       reciever,
     }).then((document) =>
       document.populate(["sender", "reciever"]).then((doc) => {
-        io.to(onlineUsers.get(reciever)).emit("get-msg", data);
+        emitEventToUser(io, "get-msg", reciever, data);
+        // io.to(onlineUsers.get(reciever)).emit("get-msg", data);
       })
     );
   }
 };
 
-exports.endCall = async (io, id) => {
-  io.to(onlineUsers.get(id)[0]).emit("redirect", "call is ended");
-};
-exports.setCallerId = async (io, data) => {
-  io.to(onlineUsers.get(data.to)[0]).emit("setCallerId", data.from);
-};
-exports.Map = async (id) => {
-  let newId = global.onlineUsers.get(id)[0];
-  return newId;
-};
 exports.sendRequest = async (addableId, id, io) => {
   let user = await User.findByIdAndUpdate(
     { _id: id },
@@ -109,7 +102,15 @@ exports.sendRequest = async (addableId, id, io) => {
       }
     );
   }
-  io.to(onlineUsers.get(addableId)[0]).emit("request", user);
+  // const newUser = onlineUsers.get(addableId)[0];
+  // if (newUser) {
+  //   io.to(newUser).emit("request", user);
+  // } else {
+  //   // Handle the case where "user" is not present in the map
+  //   console.log("User not found in the map");
+  //   // You can choose to emit a different event or take any other necessary action here
+  // }
+  emitEventToUser(io, "request", addableId, user);
 };
 exports.acceptRequest = async (addableId, id, io) => {
   let user = await User.findOneAndUpdate(
@@ -137,5 +138,26 @@ exports.acceptRequest = async (addableId, id, io) => {
       returnOriginal: false,
     }
   );
-  io.to(onlineUsers.get(addableId)[0]).emit("followBack", user);
+  // const newUser = onlineUsers.get(addableId)[0];
+  // if (newUser) {
+  // io.to(newUser).emit("followBack", user);
+
+  // } else {
+  //   // Handle the case where "user" is not present in the map
+  //   console.log("User not found in the map");
+  //   // You can choose to emit a different event or take any other necessary action here
+  // }
+  emitEventToUser(io, "followBack", addableId, user);
 };
+function emitEventToUser(io, eventName, addableId, data) {
+  const user = onlineUsers.get(addableId)?.[0];
+  if (user) {
+    if (data === "sendId") {
+      io.to(user).emit(eventName, user);
+    }
+    io.to(user).emit(eventName, data);
+  } else {
+    console.log("User not found in the map");
+    // Handle the case where user is not present in the map
+  }
+}

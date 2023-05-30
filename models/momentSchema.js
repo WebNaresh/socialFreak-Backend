@@ -16,9 +16,6 @@ const Moment = new mongoose.Schema(
     Image: {
       type: String,
     },
-    Video: {
-      type: String,
-    },
   },
   { timestamps: true }
 );
