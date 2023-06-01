@@ -40,10 +40,7 @@ const User = new mongoose.Schema(
       type: String,
       default: "Single",
     },
-    post: {
-      type: Array,
-      default: [],
-    },
+    post: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
     descriptionHighLight: {
       type: Array,
       default: ["Friend", "Influncer", "Learner"],

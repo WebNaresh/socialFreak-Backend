@@ -21,6 +21,7 @@ exports.register = catchAssyncError(async (req, res, next) => {
     "friends",
     "followers",
     "following",
+    "post",
   ]);
 
   if (existed) {
@@ -56,9 +57,10 @@ exports.register = catchAssyncError(async (req, res, next) => {
 exports.getUserWithId = catchAssyncError(async (req, res, next) => {
   const { id } = req.body;
   const existed = await User.findOne({ _id: id }).populate([
-    "friends",
-    "followers",
-    "following",
+    { path: "post", populate: { path: "userId", model: "User" } },
+    { path: "friends", model: "User" },
+    { path: "followers", model: "User" },
+    { path: "following", model: "User" },
   ]);
 
   if (existed) {
@@ -69,6 +71,7 @@ exports.getUserWithId = catchAssyncError(async (req, res, next) => {
       ...existed.followers,
     ];
     let userSuggstion = await User.find({ _id: { $nin: array } }).limit(10);
+    console.log(`🚀 ~ userSuggstion:`, userSuggstion);
     existed.userSuggestion = userSuggstion;
 
     // existed.save().then(
