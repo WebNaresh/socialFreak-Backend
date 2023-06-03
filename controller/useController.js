@@ -17,12 +17,7 @@ exports.test = catchAssyncError(async (req, res, next) => {
 
 exports.register = catchAssyncError(async (req, res, next) => {
   const { userName, userEmail, profilePicture } = req.body;
-  const existed = await User.findOne({ userEmail }).populate([
-    "friends",
-    "followers",
-    "following",
-    "post",
-  ]);
+  const existed = await User.getUserWithEmail(userEmail);
 
   if (existed) {
     const array = [
@@ -56,12 +51,7 @@ exports.register = catchAssyncError(async (req, res, next) => {
 });
 exports.getUserWithId = catchAssyncError(async (req, res, next) => {
   const { id } = req.body;
-  const existed = await User.findOne({ _id: id }).populate([
-    { path: "post", populate: { path: "userId", model: "User" } },
-    { path: "friends", model: "User" },
-    { path: "followers", model: "User" },
-    { path: "following", model: "User" },
-  ]);
+  const existed = await User.getUserData(id);
 
   if (existed) {
     const array = [
@@ -110,7 +100,7 @@ exports.getUserSuggestion = catchAssyncError(async (req, res, next) => {
 // update user
 exports.profileCard = catchAssyncError(async (req, res, next) => {
   const { userName, hightlight, profileLink, backgroundLink } = req.body;
-  let user = await User.findById({ _id: req.params.id });
+  let user = await User.getUserData(req.params.id);
 
   if (user) {
     if (userName || hightlight || profileLink || backgroundLink) {
@@ -142,7 +132,7 @@ exports.profileInfo = catchAssyncError(async (req, res, next) => {
     taggedPeople,
     hashTags,
   } = req.body;
-  let user = await User.findById({ _id: req.params.id });
+  let user = await User.getUserData(req.params.id);
   const birthdate = new Date(birthDate);
 
   if (user) {
@@ -181,56 +171,13 @@ exports.profileInfo = catchAssyncError(async (req, res, next) => {
 // getFreiend of User
 
 exports.getFreind = catchAssyncError(async (req, res, next) => {
-  const id = req.params.id;
-  let users = await User.findOne({ _id: id })
-    .select(["friends"])
-    .populate("friends");
+  let users = await User.getUserData(req.params.id);
 
   res.status(200).json({
     success: true,
     users,
   });
 });
-
-// send Request
-
-// exports.addFreind = catchAssyncError(async (req, res, next) => {
-//   const id = req.params.id;
-//   const { addableId } = req.body;
-//   this.sendRequest(addableId, id);
-//   let user = await User.findByIdAndUpdate(
-//     { _id: id },
-//     {
-//       $addToSet: { following: addableId },
-//       $pull: {
-//         userSuggestion: addableId,
-//       },
-//     },
-//     {
-//       returnOriginal: false,
-//     }
-//   );
-
-//   if (addableId !== undefined) {
-//     user.userSuggestion = user.userSuggestion.filter(
-//       (ele) => ele === addableId
-//     );
-//     let otherUser = await User.findOneAndUpdate(
-//       { _id: addableId },
-//       { $addToSet: { followers: user._id } },
-//       {
-//         returnOriginal: false,
-//       }
-//     );
-//     // await user.save();
-//   }
-//   await user.populate("friends");
-
-//   res.status(200).json({
-//     success: true,
-//     user,
-//   });
-// });
 
 exports.addFreind = catchAssyncError(async (req, res, next) => {
   const id = req.params.id;
@@ -243,37 +190,6 @@ exports.addFreind = catchAssyncError(async (req, res, next) => {
     io,
   });
 });
-
-// exports.sendRequest = async (addableId, id) => {
-//   let newMap = Map(addableId).then((id) => {
-//     io.io.to(id).emit("request", id);
-//   });
-//   // let user = await User.findByIdAndUpdate(
-//   //   { _id: id },
-//   //   {
-//   //     $addToSet: { following: addableId },
-//   //     $pull: {
-//   //       userSuggestion: addableId,
-//   //     },
-//   //   },
-//   //   {
-//   //     returnOriginal: false,
-//   //   }
-//   // );
-//   // if (addableId !== undefined) {
-//   //   user.userSuggestion = user.userSuggestion.filter(
-//   //     (ele) => ele === addableId
-//   //   );
-//   //   let otherUser = await User.findOneAndUpdate(
-//   //     { _id: addableId },
-//   //     { $addToSet: { followers: user._id } },
-//   //     {
-//   //       returnOriginal: false,
-//   //     }
-//   //   );
-//   // }
-//   // return user.populate("friends");
-// };
 
 // getFreiend of User
 
@@ -330,7 +246,4 @@ exports.acceptRequest = catchAssyncError(async (req, res, next) => {
     user,
   });
 });
-// delete user
-// get a user
-// follow user
-// unfollow user
+// accept Request

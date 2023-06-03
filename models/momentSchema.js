@@ -15,6 +15,11 @@ const Moment = new mongoose.Schema(
     },
     Image: {
       type: String,
+      default: "",
+      required: true,
+    },
+    localDate: {
+      type: Date,
     },
   },
   { timestamps: true }

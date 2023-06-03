@@ -19,6 +19,9 @@ const Message = new mongoose.Schema(
       type: Date,
       default: Date.now(),
     },
+    sticker:{
+      type:String
+    }
   },
   { timestamps: true }
 );
