@@ -1,5 +1,9 @@
 const express = require("express");
-const { CreateMoment } = require("../controller/ModmentController");
+const {
+  CreateMoment,
+  getAllMoments,
+} = require("../controller/ModmentController");
 const router = express.Router();
-router.route("/createMoment").post(CreateMoment);
+router.route("/createMoment/:id").post(CreateMoment);
+router.route("/getMoments").post(getAllMoments);
 module.exports = router;
