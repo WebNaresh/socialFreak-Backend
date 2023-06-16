@@ -7,6 +7,7 @@ const { getIo } = require("../socket");
 global.onlineUsers = new Map();
 setInterval(() => {
   console.log(global.onlineUsers);
+  // console.log(global.onlineUsers);
 }, 5000);
 exports.AddUser = async (socket, userId) => {
   let io = getIo();
