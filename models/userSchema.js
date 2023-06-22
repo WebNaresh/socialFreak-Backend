@@ -3,6 +3,7 @@ const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { default: isEmail } = require("validator/lib/isEmail");
+const Moment = require("./momentSchema");
 
 const User = new mongoose.Schema(
   {
@@ -65,22 +66,33 @@ const User = new mongoose.Schema(
       type: Array,
       default: ["Friend", "Influncer", "Learner"],
     },
-    memories: {
-      type: Array,
-      default: [],
-    },
+    memories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Moment" }],
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     userSuggestion: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );
 
+// User.pre("save", async function (next) {
+//   console.log(!this.isModified("password"));
+//   if (!this.isModified("password")) {
+//     next();
+//   }
+//   this.password = await bcrypt.hash(this.password, 10);
+// });
 User.pre("save", async function (next) {
-  console.log(!this.isModified("password"));
-  if (!this.isModified("password")) {
-    next();
-  }
-  this.password = await bcrypt.hash(this.password, 10);
+  const user = this;
+
+  // Remove memories that are not found
+  const validMemories = await Promise.all(
+    user.memories.map(async (memoryId) => {
+      const memory = await Moment.findOne({ _id: memoryId });
+      return memory;
+    })
+  );
+
+  user.memories = validMemories.filter((memory) => memory !== null);
+  next();
 });
 User.methods.getJWTToken = function () {
   console.log(this._id);
@@ -94,9 +106,17 @@ User.statics.getUserData = async function (id) {
       { path: "post", populate: { path: "userId", model: "User" } },
       { path: "friends", model: "User" },
       { path: "followers", model: "User" },
-      { path: "following", model: "User" },
+      {
+        path: "following",
+        model: "User",
+        populate: { path: "memories", model: "Moment" },
+      },
+      { path: "memories", model: "Moment" },
     ]);
-
+    // for (const followedUser of this.following) {
+    //   // Populate the memories array for each followed user
+    //   await followedUser.populate("memories").execPopulate();
+    // }
     return userData;
   } catch (error) {
     // Handle any errors that occurred during the database query
